@@ -1,0 +1,40 @@
+# .gitignore for C# ASP.NET Core with Rider on macOS
+
+# Build results
+bin/
+obj/
+out/
+
+# Rider project files
+.idea/
+*.sln.iml
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ASP.NET Core secrets
+secrets.json
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+packages/
+.nuget/
+
+# VS Code settings (if used)
+.vscode/
+
+# dotnet tool restore cache
+.dotnet/
+
+# Test results
+TestResults/

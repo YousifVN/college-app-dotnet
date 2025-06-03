@@ -1,0 +1,8 @@
+###
+GET https://localhost:7116/Student
+
+###
+GET https://localhost:7116/api/Student/3
+
+###
+GET https://localhost:7116/WeatherForecast
