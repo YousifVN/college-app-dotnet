@@ -67,7 +67,28 @@ namespace CollegeApp.Controllers
             StudentRepo.LoadStudents.Remove(student);
             
             return Ok(true);
-        } 
-        
+        }
+
+        [HttpPost("Create")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult<Student> CreateStudent([FromBody] Student model)
+        {
+            if (model is null) return BadRequest("Request body can't be empty");
+            
+            Student newEntry = new Student
+            {
+                Id = StudentRepo.LoadStudents.LastOrDefault()!.Id + 1,
+                Name = model.Name,
+                Address = model.Address,
+                Email = model.Email
+
+            };
+
+            StudentRepo.LoadStudents.Add(newEntry);
+            model.Id = newEntry.Id;
+            return Ok(model);
+        }
     }
 }
