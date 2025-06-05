@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CollegeApp.Models;
 using CollegeApp.Repositories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CollegeApp.Controllers
@@ -64,8 +65,8 @@ namespace CollegeApp.Controllers
         }
 
         [HttpPost("Create")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)] 
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<Student> CreateStudent([FromBody] Student model)
         {
@@ -83,6 +84,58 @@ namespace CollegeApp.Controllers
             StudentRepo.LoadStudents.Add(newEntry);
             model.Id = newEntry.Id;
             return Ok(model);
+        }
+        
+        [HttpPut("Update")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult UpdateStudent([FromBody] Student model)
+        {
+            if (model is null || model.Id <= 0) return BadRequest();
+
+            var existingStudent = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == model.Id);
+
+            if (existingStudent is null) return NotFound();
+
+            existingStudent.Name = model.Name;
+            existingStudent.Email = model.Email;
+            existingStudent.Address = model.Address;
+
+            return NoContent();
+        }
+        
+        [HttpPatch("Patch/{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult PatchStudent(int id, [FromBody] JsonPatchDocument<Student> model)
+        {
+            if (model is null || id <= 0) return BadRequest();
+
+            var existingStudent = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
+
+            if (existingStudent is null) return NotFound();
+
+            var student = new Student
+            {
+                Id = existingStudent.Id,
+                Name = existingStudent.Name,
+                Email = existingStudent.Email,
+                Address = existingStudent.Address,
+            };
+            
+            model.ApplyTo(student, ModelState);
+
+            if (!ModelState.IsValid) return BadRequest();
+
+            existingStudent.Name = student.Name;
+            existingStudent.Email = student.Email;
+            existingStudent.Address = student.Address;
+            
+            return NoContent();
         }
     }
 }
