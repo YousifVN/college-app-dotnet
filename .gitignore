@@ -24,6 +24,7 @@ secrets.json
 
 # Logs
 *.log
+Log/
 
 # NuGet packages
 *.nupkg

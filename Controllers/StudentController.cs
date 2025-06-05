@@ -14,11 +14,19 @@ namespace CollegeApp.Controllers
     [ApiController]
     public class StudentController : ControllerBase
     {
+        private readonly ILogger<StudentController> _logger;
+
+        public StudentController(ILogger<StudentController> logger)
+        {
+            _logger = logger;
+        }
+        
         [HttpGet("All")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IEnumerable<Student>> Get()
         {
+            _logger.LogInformation("GetStudents method started");
             return Ok(StudentRepo.LoadStudents);
         }
 
@@ -29,10 +37,19 @@ namespace CollegeApp.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<Student> GetById(int id)
         {
-            if (id <= 0) return BadRequest($"The id: {id} is invalid");
+            _logger.LogInformation("GetById method started");
+            if (id <= 0)
+            {
+                _logger.LogWarning("Bad request");
+                return BadRequest($"The id: {id} is invalid");
+            }
 
             var student = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
-            if (student is null) return NotFound($"The student with the id: {id} not found");
+            if (student is null)
+            {
+                _logger.LogError("Student is null/ not found");
+                return NotFound($"The student with the id: {id} not found");
+            }
             
             return Ok(student); 
         } 
