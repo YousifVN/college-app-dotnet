@@ -44,13 +44,7 @@ namespace CollegeApp.Controllers
         {
             var students = StudentRepo.LoadStudents.Where(e => e.Name == name);
             return Ok(students);
-        } 
-        
-        // [HttpGet("{email:alpha}")]
-        // public IEnumerable<Student> GetByEmail(string email)
-        // {
-        //     return StudentRepo.LoadStudents.Where(e => e.Name.Contains(email));
-        // } 
+        }
         
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
