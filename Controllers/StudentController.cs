@@ -14,22 +14,36 @@ namespace CollegeApp.Controllers
     public class StudentController : ControllerBase
     {
         [HttpGet("All")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IEnumerable<Student>> Get()
         {
             return Ok(StudentRepo.LoadStudents);
         }
 
-        [HttpGet("{id:int}")]
-        public ActionResult<IEnumerable<Student>> GetById(int id)
+        [HttpGet("{id:int}")] 
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult<Student> GetById(int id)
         {
             if (id <= 0) return BadRequest($"The id: {id} is invalid");
-            return Ok(StudentRepo.LoadStudents.Where(e => e.Id == id)); 
+
+            var student = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
+            if (student is null) return NotFound($"The student with the id: {id} not found");
+            
+            return Ok(student); 
         } 
         
         [HttpGet("{name:alpha}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        // returns a list of students with the provided name
         public ActionResult<IEnumerable<Student>> GetByName(string name)
         {
-            return Ok(StudentRepo.LoadStudents.Where(e => e.Name == name));
+            var students = StudentRepo.LoadStudents.Where(e => e.Name == name);
+            return Ok(students);
         } 
         
         // [HttpGet("{email:alpha}")]
@@ -39,13 +53,19 @@ namespace CollegeApp.Controllers
         // } 
         
         [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<bool> DeleteById(int id)
         {
             if (id <= 0) return BadRequest($"The id: {id} is invalid");
+                
             var student = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
-            if (student == null)
-                return BadRequest($"there is no students with the id: {id}");
+            if (student == null) return NotFound($"there is no students with the id: {id}");
+            
             StudentRepo.LoadStudents.Remove(student);
+            
             return Ok(true);
         } 
         
