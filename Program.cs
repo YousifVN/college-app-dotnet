@@ -1,4 +1,6 @@
+using CollegeApp.Data;
 using CollegeApp.MyLogger;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +16,14 @@ builder.Logging.AddSerilog();
 // use serilog and clear other logging providers
 // builder.Host.UseSerilog();
 
+builder.Services.AddDbContext<CollegeDbContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("CollegeAppDBConnection"));
+});
+
 // builder.Services.AddControllers().AddNewtonsoftJson();
-builder.Services.AddControllers(options => options.ReturnHttpNotAcceptable = true).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();  
+builder.Services.AddControllers(options => options.ReturnHttpNotAcceptable = true).AddNewtonsoftJson()
+    .AddXmlDataContractSerializerFormatters();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -24,8 +32,8 @@ builder.Services.AddScoped<IMyLogger, LogToMemory>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
-{ 
-    app.UseSwagger(); 
+{
+    app.UseSwagger();
     app.UseSwaggerUI();
 }
 
