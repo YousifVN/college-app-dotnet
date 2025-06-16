@@ -1,5 +1,5 @@
+using CollegeApp.Data;
 using CollegeApp.Models;
-using CollegeApp.Repositories;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,10 +10,12 @@ namespace CollegeApp.Controllers;
 public class StudentController : ControllerBase
 {
     private readonly ILogger<StudentController> _logger;
+    private readonly CollegeDbContext _dbContext; 
 
-    public StudentController(ILogger<StudentController> logger)
+    public StudentController(ILogger<StudentController> logger, CollegeDbContext dbContext)
     {
         _logger = logger;
+        _dbContext = dbContext;
     }
 
     [HttpGet("All")]
@@ -22,7 +24,7 @@ public class StudentController : ControllerBase
     public ActionResult<IEnumerable<Student>> Get()
     {
         _logger.LogInformation("GetStudents method started");
-        return Ok(StudentRepo.LoadStudents);
+        return Ok(_dbContext.Students);
     }
 
     [HttpGet("{id:int}")]
@@ -39,7 +41,7 @@ public class StudentController : ControllerBase
             return BadRequest($"The id: {id} is invalid");
         }
 
-        var student = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
+        var student = _dbContext.Students.FirstOrDefault(e => e.Id == id);
         if (student is null)
         {
             _logger.LogError("Student is null/ not found");
@@ -55,7 +57,7 @@ public class StudentController : ControllerBase
     // returns a list of students with the provided name
     public ActionResult<IEnumerable<Student>> GetByName(string name)
     {
-        var students = StudentRepo.LoadStudents.Where(e => e.Name == name);
+        var students = _dbContext.Students.Where(e => e.Name == name);
         return Ok(students);
     }
 
@@ -68,10 +70,11 @@ public class StudentController : ControllerBase
     {
         if (id <= 0) return BadRequest($"The id: {id} is invalid");
 
-        var student = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
+        var student = _dbContext.Students.FirstOrDefault(e => e.Id == id);
         if (student == null) return NotFound($"there is no students with the id: {id}");
 
-        StudentRepo.LoadStudents.Remove(student);
+        _dbContext.Students.Remove(student);
+        _dbContext.SaveChanges();
 
         return Ok(true);
     }
@@ -86,13 +89,14 @@ public class StudentController : ControllerBase
 
         var newEntry = new Student
         {
-            Id = StudentRepo.LoadStudents.LastOrDefault()!.Id + 1,
             Name = model.Name,
             Address = model.Address,
-            Email = model.Email
+            Email = model.Email,
+            DOB = model.DOB,
         };
 
-        StudentRepo.LoadStudents.Add(newEntry);
+        _dbContext.Students.Add(newEntry);
+        _dbContext.SaveChanges();
         model.Id = newEntry.Id;
         return Ok(model);
     }
@@ -106,13 +110,16 @@ public class StudentController : ControllerBase
     {
         if (model is null || model.Id <= 0) return BadRequest();
 
-        var existingStudent = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == model.Id);
+        var existingStudent = _dbContext.Students.FirstOrDefault(e => e.Id == model.Id);
 
         if (existingStudent is null) return NotFound();
 
         existingStudent.Name = model.Name;
         existingStudent.Email = model.Email;
         existingStudent.Address = model.Address;
+        existingStudent.DOB = model.DOB;
+
+        _dbContext.SaveChanges();
 
         return NoContent();
     }
@@ -126,7 +133,7 @@ public class StudentController : ControllerBase
     {
         if (model is null || id <= 0) return BadRequest();
 
-        var existingStudent = StudentRepo.LoadStudents.FirstOrDefault(e => e.Id == id);
+        var existingStudent = _dbContext.Students.FirstOrDefault(e => e.Id == id);
 
         if (existingStudent is null) return NotFound();
 
@@ -135,7 +142,9 @@ public class StudentController : ControllerBase
             Id = existingStudent.Id,
             Name = existingStudent.Name,
             Email = existingStudent.Email,
-            Address = existingStudent.Address
+            Address = existingStudent.Address,
+            DOB = existingStudent.DOB
+            
         };
 
         model.ApplyTo(student, ModelState);
@@ -145,6 +154,9 @@ public class StudentController : ControllerBase
         existingStudent.Name = student.Name;
         existingStudent.Email = student.Email;
         existingStudent.Address = student.Address;
+        existingStudent.DOB = student.DOB;
+
+        _dbContext.SaveChanges();
 
         return NoContent();
     }

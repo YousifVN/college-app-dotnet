@@ -10,7 +10,7 @@ public class CollegeDbContext : DbContext
         
     }
     
-    DbSet<Student> Students { get; set; }
+    public DbSet<Student> Students { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
