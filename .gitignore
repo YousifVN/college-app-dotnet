@@ -21,7 +21,7 @@ Thumbs.db
 
 # ASP.NET Core secrets
 secrets.json
-appsettings.json
+appsettings.Development.json
 
 # Logs
 *.log
