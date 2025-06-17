@@ -5,6 +5,8 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+# region loggin settings
+
 Log.Logger = new LoggerConfiguration()
     // .MinimumLevel.Information()
     .WriteTo.File("Log/log.txt", rollingInterval: RollingInterval.Hour)
@@ -16,14 +18,17 @@ builder.Logging.AddSerilog();
 // use serilog and clear other logging providers
 // builder.Host.UseSerilog();
 
+# endregion 
+
 builder.Services.AddDbContext<CollegeDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("CollegeAppDBConnection"));
 });
 
 // builder.Services.AddControllers().AddNewtonsoftJson();
-builder.Services.AddControllers(options => options.ReturnHttpNotAcceptable = true).AddNewtonsoftJson()
-    .AddXmlDataContractSerializerFormatters();
+builder.Services.AddControllers( 
+    // options => options.ReturnHttpNotAcceptable = true
+    ).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

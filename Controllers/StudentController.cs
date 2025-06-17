@@ -2,6 +2,7 @@ using CollegeApp.Data;
 using CollegeApp.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CollegeApp.Controllers;
 
@@ -19,20 +20,24 @@ public class StudentController : ControllerBase
     }
 
     [HttpGet("All")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult<IEnumerable<Student>> Get()
+    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<StudentDTO>>> GetAllAsync()
     {
         _logger.LogInformation("GetStudents method started");
-        return Ok(_dbContext.Students);
+        var students = await _dbContext.Students.Select(s => new StudentDTO()
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Address = s.Address,
+            Email = s.Email,
+            DOB = s.DOB
+        }).ToListAsync();
+        return Ok(students);
     }
 
     [HttpGet("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult<Student> GetById(int id)
+    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<StudentDTO>> GetByIdAsync(int id)
     {
         _logger.LogInformation("GetById method started");
         if (id <= 0)
@@ -41,49 +46,50 @@ public class StudentController : ControllerBase
             return BadRequest($"The id: {id} is invalid");
         }
 
-        var student = _dbContext.Students.FirstOrDefault(e => e.Id == id);
+        var student = await _dbContext.Students.Where(n => n.Id == id).FirstOrDefaultAsync();
         if (student is null)
         {
             _logger.LogError("Student is null/ not found");
             return NotFound($"The student with the id: {id} not found");
         }
+        
+        var studentDto = new StudentDTO
+        {
+            Id = student.Id,
+            Name = student.Name,
+            Email = student.Email,
+            Address = student.Address,
+            DOB = student.DOB
+        };
 
-        return Ok(student);
+        return Ok(studentDto);
     }
 
     [HttpGet("{name:alpha}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    // returns a list of students with the provided name
-    public ActionResult<IEnumerable<Student>> GetByName(string name)
+    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<StudentDTO>> GetByNameAsync(string name)
     {
-        var students = _dbContext.Students.Where(e => e.Name == name);
-        return Ok(students);
+        if (string.IsNullOrEmpty(name)) return BadRequest();
+        
+        var student = await _dbContext.Students.Where(n => n.Name == name).FirstOrDefaultAsync();
+        
+        if (student == null) return NotFound($"The student with name {name} not found");
+        
+        var studentDto = new StudentDTO
+        {
+            Id = student.Id,
+            Name = student.Name,
+            Email = student.Email,
+            Address = student.Address,
+            DOB = student.DOB
+        };
+
+        return Ok(studentDto);
     }
-
-    [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult<bool> DeleteById(int id)
-    {
-        if (id <= 0) return BadRequest($"The id: {id} is invalid");
-
-        var student = _dbContext.Students.FirstOrDefault(e => e.Id == id);
-        if (student == null) return NotFound($"there is no students with the id: {id}");
-
-        _dbContext.Students.Remove(student);
-        _dbContext.SaveChanges();
-
-        return Ok(true);
-    }
-
+    
     [HttpPost("Create")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult<Student> CreateStudent([FromBody] Student model)
+    [ProducesResponseType(StatusCodes.Status201Created), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<StudentDTO>> CreateAsync([FromBody] StudentDTO model)
     {
         if (model is null) return BadRequest("Request body can't be empty");
 
@@ -95,69 +101,82 @@ public class StudentController : ControllerBase
             DOB = model.DOB,
         };
 
-        _dbContext.Students.Add(newEntry);
-        _dbContext.SaveChanges();
+        await _dbContext.Students.AddAsync(newEntry);
+        await _dbContext.SaveChangesAsync();
         model.Id = newEntry.Id;
         return Ok(model);
     }
-
+    
     [HttpPut("Update")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult UpdateStudent([FromBody] Student model)
+    [ProducesResponseType(StatusCodes.Status204NoContent), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> UpdateAsync([FromBody] StudentDTO model)
     {
         if (model is null || model.Id <= 0) return BadRequest();
 
-        var existingStudent = _dbContext.Students.FirstOrDefault(e => e.Id == model.Id);
+        var existingEntry = await _dbContext.Students.AsNoTracking().Where(s => s.Id == model.Id).FirstOrDefaultAsync();
 
-        if (existingStudent is null) return NotFound();
+        if (existingEntry is null) return NotFound();
 
-        existingStudent.Name = model.Name;
-        existingStudent.Email = model.Email;
-        existingStudent.Address = model.Address;
-        existingStudent.DOB = model.DOB;
+        var newEntry = new Student()
+        {
+            Id = existingEntry.Id,
+            Name = model.Name,
+            Email = model.Email,
+            Address = model.Address,
+            DOB = model.DOB
+        };
+        
+        _dbContext.Students.Update(newEntry);
+        await _dbContext.SaveChangesAsync();
 
-        _dbContext.SaveChanges();
+        return NoContent();
+    }
+    
+    [HttpPatch("Patch/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> PatchAsync(int id, [FromBody] JsonPatchDocument<StudentDTO> model)
+    {
+        if (model is null || id <= 0) return BadRequest();
+
+        var existingEntry = await _dbContext.Students.Where(e => e.Id == id).FirstOrDefaultAsync();
+
+        if (existingEntry is null) return NotFound();
+
+        var studentDto = new StudentDTO
+        {
+            Id = existingEntry.Id,
+            Name = existingEntry.Name,
+            Email = existingEntry.Email,
+            Address = existingEntry.Address
+        };
+
+        model.ApplyTo(studentDto, ModelState);
+
+        if (!ModelState.IsValid) return BadRequest();
+
+        existingEntry.Name = studentDto.Name;
+        existingEntry.Email = studentDto.Email;
+        existingEntry.Address = studentDto.Address;
+        existingEntry.DOB = studentDto.DOB;
+
+        await _dbContext.SaveChangesAsync();
 
         return NoContent();
     }
 
-    [HttpPatch("Patch/{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public ActionResult PatchStudent(int id, [FromBody] JsonPatchDocument<Student> model)
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<bool>> DeleteAsync(int id)
     {
-        if (model is null || id <= 0) return BadRequest();
+        if (id <= 0) return BadRequest($"The id: {id} is invalid");
 
-        var existingStudent = _dbContext.Students.FirstOrDefault(e => e.Id == id);
+        var student = await _dbContext.Students.Where(e => e.Id == id).FirstOrDefaultAsync();
+        
+        if (student == null) return NotFound($"there is no students with the id: {id}");
 
-        if (existingStudent is null) return NotFound();
+        _dbContext.Students.Remove(student);
+        await _dbContext.SaveChangesAsync();
 
-        var student = new Student
-        {
-            Id = existingStudent.Id,
-            Name = existingStudent.Name,
-            Email = existingStudent.Email,
-            Address = existingStudent.Address,
-            DOB = existingStudent.DOB
-            
-        };
-
-        model.ApplyTo(student, ModelState);
-
-        if (!ModelState.IsValid) return BadRequest();
-
-        existingStudent.Name = student.Name;
-        existingStudent.Email = student.Email;
-        existingStudent.Address = student.Address;
-        existingStudent.DOB = student.DOB;
-
-        _dbContext.SaveChanges();
-
-        return NoContent();
+        return Ok(true);
     }
 }
