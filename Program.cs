@@ -1,3 +1,4 @@
+using CollegeApp.Configurations;
 using CollegeApp.Data;
 using CollegeApp.MyLogger;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,10 @@ builder.Services.AddControllers(
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAutoMapper(typeof(AutoMapperConfig));
+
 builder.Services.AddScoped<IMyLogger, LogToMemory>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

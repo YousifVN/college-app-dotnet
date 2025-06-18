@@ -1,3 +1,4 @@
+using AutoMapper;
 using CollegeApp.Data;
 using CollegeApp.Models;
 using Microsoft.AspNetCore.JsonPatch;
@@ -11,12 +12,14 @@ namespace CollegeApp.Controllers;
 public class StudentController : ControllerBase
 {
     private readonly ILogger<StudentController> _logger;
-    private readonly CollegeDbContext _dbContext; 
+    private readonly CollegeDbContext _dbContext;
+    private readonly IMapper _mapper;
 
-    public StudentController(ILogger<StudentController> logger, CollegeDbContext dbContext)
+    public StudentController(ILogger<StudentController> logger, CollegeDbContext dbContext, IMapper mapper)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _mapper = mapper;
     }
 
     [HttpGet("All")]
@@ -24,15 +27,12 @@ public class StudentController : ControllerBase
     public async Task<ActionResult<IEnumerable<StudentDTO>>> GetAllAsync()
     {
         _logger.LogInformation("GetStudents method started");
-        var students = await _dbContext.Students.Select(s => new StudentDTO()
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Address = s.Address,
-            Email = s.Email,
-            DOB = s.DOB
-        }).ToListAsync();
-        return Ok(students);
+        
+        var students = await _dbContext.Students.ToListAsync();
+
+        var studentDtoData = _mapper.Map<List<StudentDTO>>(students);
+        
+        return Ok(studentDtoData);
     }
 
     [HttpGet("{id:int}")]
@@ -47,20 +47,14 @@ public class StudentController : ControllerBase
         }
 
         var student = await _dbContext.Students.Where(n => n.Id == id).FirstOrDefaultAsync();
+        
         if (student is null)
         {
             _logger.LogError("Student is null/ not found");
             return NotFound($"The student with the id: {id} not found");
         }
         
-        var studentDto = new StudentDTO
-        {
-            Id = student.Id,
-            Name = student.Name,
-            Email = student.Email,
-            Address = student.Address,
-            DOB = student.DOB
-        };
+        var studentDto = _mapper.Map<StudentDTO>(student);
 
         return Ok(studentDto);
     }
@@ -75,56 +69,38 @@ public class StudentController : ControllerBase
         
         if (student == null) return NotFound($"The student with name {name} not found");
         
-        var studentDto = new StudentDTO
-        {
-            Id = student.Id,
-            Name = student.Name,
-            Email = student.Email,
-            Address = student.Address,
-            DOB = student.DOB
-        };
+        var studentDto = _mapper.Map<StudentDTO>(student);
 
         return Ok(studentDto);
     }
     
     [HttpPost("Create")]
     [ProducesResponseType(StatusCodes.Status201Created), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<StudentDTO>> CreateAsync([FromBody] StudentDTO model)
+    public async Task<ActionResult<StudentDTO>> CreateAsync([FromBody] StudentDTO dto)
     {
-        if (model is null) return BadRequest("Request body can't be empty");
+        if (dto is null) return BadRequest("Request body can't be empty");
 
-        var newEntry = new Student
-        {
-            Name = model.Name,
-            Address = model.Address,
-            Email = model.Email,
-            DOB = model.DOB,
-        };
+        var newEntry = _mapper.Map<Student>(dto);
 
         await _dbContext.Students.AddAsync(newEntry);
         await _dbContext.SaveChangesAsync();
-        model.Id = newEntry.Id;
-        return Ok(model);
+        
+        dto.Id = newEntry.Id;
+        
+        return Ok(dto);
     }
     
     [HttpPut("Update")]
     [ProducesResponseType(StatusCodes.Status204NoContent), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> UpdateAsync([FromBody] StudentDTO model)
+    public async Task<ActionResult> UpdateAsync([FromBody] StudentDTO dto)
     {
-        if (model is null || model.Id <= 0) return BadRequest();
+        if (dto is null || dto.Id <= 0) return BadRequest();
 
-        var existingEntry = await _dbContext.Students.AsNoTracking().Where(s => s.Id == model.Id).FirstOrDefaultAsync();
+        var existingEntry = await _dbContext.Students.AsNoTracking().Where(s => s.Id == dto.Id).FirstOrDefaultAsync();
 
         if (existingEntry is null) return NotFound();
 
-        var newEntry = new Student()
-        {
-            Id = existingEntry.Id,
-            Name = model.Name,
-            Email = model.Email,
-            Address = model.Address,
-            DOB = model.DOB
-        };
+        var newEntry = _mapper.Map<Student>(dto);
         
         _dbContext.Students.Update(newEntry);
         await _dbContext.SaveChangesAsync();
@@ -138,27 +114,19 @@ public class StudentController : ControllerBase
     {
         if (model is null || id <= 0) return BadRequest();
 
-        var existingEntry = await _dbContext.Students.Where(e => e.Id == id).FirstOrDefaultAsync();
+        var existingEntry = await _dbContext.Students.AsNoTracking().Where(e => e.Id == id).FirstOrDefaultAsync();
 
         if (existingEntry is null) return NotFound();
 
-        var studentDto = new StudentDTO
-        {
-            Id = existingEntry.Id,
-            Name = existingEntry.Name,
-            Email = existingEntry.Email,
-            Address = existingEntry.Address
-        };
+        var studentDto = _mapper.Map<StudentDTO>(existingEntry);
 
         model.ApplyTo(studentDto, ModelState);
 
         if (!ModelState.IsValid) return BadRequest();
 
-        existingEntry.Name = studentDto.Name;
-        existingEntry.Email = studentDto.Email;
-        existingEntry.Address = studentDto.Address;
-        existingEntry.DOB = studentDto.DOB;
+        existingEntry = _mapper.Map<Student>(studentDto);
 
+        _dbContext.Students.Update(existingEntry);
         await _dbContext.SaveChangesAsync();
 
         return NoContent();
