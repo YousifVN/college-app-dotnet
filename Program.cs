@@ -1,5 +1,6 @@
 using CollegeApp.Configurations;
 using CollegeApp.Data;
+using CollegeApp.Data.Repository;
 using CollegeApp.MyLogger;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -35,8 +36,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(AutoMapperConfig));
-
-builder.Services.AddScoped<IMyLogger, LogToMemory>();
+builder.Services.AddScoped(typeof(ICollegeRepository<>), typeof(CollegeRepository<>));
+builder.Services.AddTransient<IMyLogger, LogToMemory>();
 
 var app = builder.Build();
 

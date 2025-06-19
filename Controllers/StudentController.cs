@@ -1,5 +1,6 @@
 using AutoMapper;
 using CollegeApp.Data;
+using CollegeApp.Data.Repository;
 using CollegeApp.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -12,14 +13,14 @@ namespace CollegeApp.Controllers;
 public class StudentController : ControllerBase
 {
     private readonly ILogger<StudentController> _logger;
-    private readonly CollegeDbContext _dbContext;
     private readonly IMapper _mapper;
+    private readonly ICollegeRepository<Student> _studentRepository;
 
-    public StudentController(ILogger<StudentController> logger, CollegeDbContext dbContext, IMapper mapper)
+    public StudentController(ILogger<StudentController> logger, IMapper mapper, ICollegeRepository<Student> studentRepository)
     {
         _logger = logger;
-        _dbContext = dbContext;
         _mapper = mapper;
+        _studentRepository = studentRepository;
     }
 
     [HttpGet("All")]
@@ -27,15 +28,16 @@ public class StudentController : ControllerBase
     public async Task<ActionResult<IEnumerable<StudentDTO>>> GetAllAsync()
     {
         _logger.LogInformation("GetStudents method started");
-        
-        var students = await _dbContext.Students.ToListAsync();
+
+        var students = await _studentRepository.GetAllAsync();
 
         var studentDtoData = _mapper.Map<List<StudentDTO>>(students);
         
         return Ok(studentDtoData);
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet]
+    [Route("{id:int}", Name = "GetStudentById")]
     [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudentDTO>> GetByIdAsync(int id)
     {
@@ -46,7 +48,7 @@ public class StudentController : ControllerBase
             return BadRequest($"The id: {id} is invalid");
         }
 
-        var student = await _dbContext.Students.Where(n => n.Id == id).FirstOrDefaultAsync();
+        var student = await _studentRepository.GetByIdAsync(student => student.Id == id);
         
         if (student is null)
         {
@@ -64,8 +66,8 @@ public class StudentController : ControllerBase
     public async Task<ActionResult<StudentDTO>> GetByNameAsync(string name)
     {
         if (string.IsNullOrEmpty(name)) return BadRequest();
-        
-        var student = await _dbContext.Students.Where(n => n.Name == name).FirstOrDefaultAsync();
+
+        var student = await _studentRepository.GetByNameAsync(student => student.Name.ToLower().Contains(name.ToLower()));
         
         if (student == null) return NotFound($"The student with name {name} not found");
         
@@ -80,14 +82,15 @@ public class StudentController : ControllerBase
     {
         if (dto is null) return BadRequest("Request body can't be empty");
 
-        var newEntry = _mapper.Map<Student>(dto);
+        var student = _mapper.Map<Student>(dto);
 
-        await _dbContext.Students.AddAsync(newEntry);
-        await _dbContext.SaveChangesAsync();
-        
-        dto.Id = newEntry.Id;
-        
-        return Ok(dto);
+        var studentAfterCreation = await _studentRepository.CreateAsync(student);
+
+        dto.Id = studentAfterCreation.Id;
+        // Status - 201
+        // https://localhost:7185/api/Student/3
+        // New student details
+        return CreatedAtRoute("GetStudentById", new { id = dto.Id }, dto);
     }
     
     [HttpPut("Update")]
@@ -96,39 +99,37 @@ public class StudentController : ControllerBase
     {
         if (dto is null || dto.Id <= 0) return BadRequest();
 
-        var existingEntry = await _dbContext.Students.AsNoTracking().Where(s => s.Id == dto.Id).FirstOrDefaultAsync();
+        var existingEntry = await _studentRepository.GetByIdAsync(student => student.Id == dto.Id, true);
 
         if (existingEntry is null) return NotFound();
 
         var newEntry = _mapper.Map<Student>(dto);
-        
-        _dbContext.Students.Update(newEntry);
-        await _dbContext.SaveChangesAsync();
+
+        await _studentRepository.UpdateAsync(newEntry);
 
         return NoContent();
     }
     
     [HttpPatch("Patch/{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent), ProducesResponseType(StatusCodes.Status400BadRequest), ProducesResponseType(StatusCodes.Status404NotFound), ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> PatchAsync(int id, [FromBody] JsonPatchDocument<StudentDTO> model)
+    public async Task<ActionResult> PatchAsync(int id, [FromBody] JsonPatchDocument<StudentDTO> dto)
     {
-        if (model is null || id <= 0) return BadRequest();
+        if (dto is null || id <= 0) return BadRequest();
 
-        var existingEntry = await _dbContext.Students.AsNoTracking().Where(e => e.Id == id).FirstOrDefaultAsync();
+        var existingEntry = await _studentRepository.GetByIdAsync(student => student.Id == id, true);
 
         if (existingEntry is null) return NotFound();
 
         var studentDto = _mapper.Map<StudentDTO>(existingEntry);
 
-        model.ApplyTo(studentDto, ModelState);
+        dto.ApplyTo(studentDto, ModelState);
 
         if (!ModelState.IsValid) return BadRequest();
 
         existingEntry = _mapper.Map<Student>(studentDto);
 
-        _dbContext.Students.Update(existingEntry);
-        await _dbContext.SaveChangesAsync();
-
+        await _studentRepository.UpdateAsync(existingEntry);
+        
         return NoContent();
     }
 
@@ -138,12 +139,11 @@ public class StudentController : ControllerBase
     {
         if (id <= 0) return BadRequest($"The id: {id} is invalid");
 
-        var student = await _dbContext.Students.Where(e => e.Id == id).FirstOrDefaultAsync();
+        var student = await _studentRepository.GetByIdAsync(student => student.Id == id);
         
         if (student == null) return NotFound($"there is no students with the id: {id}");
 
-        _dbContext.Students.Remove(student);
-        await _dbContext.SaveChangesAsync();
+        await _studentRepository.DeleteAsync(student);
 
         return Ok(true);
     }
