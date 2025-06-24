@@ -37,6 +37,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(AutoMapperConfig));
 builder.Services.AddScoped(typeof(ICollegeRepository<>), typeof(CollegeRepository<>));
+builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddTransient<IMyLogger, LogToMemory>();
 
 var app = builder.Build();
