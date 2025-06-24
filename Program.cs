@@ -40,6 +40,15 @@ builder.Services.AddScoped(typeof(ICollegeRepository<>), typeof(CollegeRepositor
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddTransient<IMyLogger, LogToMemory>();
 
+builder.Services.AddCors(options => options.AddPolicy("MyTestCores", policy =>
+{
+    // allow all origins
+    // policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    
+    // allow some origins
+    policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod();
+}));
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -49,6 +58,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("MyTestCores");
 
 app.UseAuthorization();
 
