@@ -24,5 +24,10 @@ public class StudentConfig : IEntityTypeConfiguration<Student>
             new() { Id = 3, Name = "hassan", Email = "hassan@gmail.com", Address = "Basra", DOB = new DateTime(2014, 9, 27) },
             new() { Id = 4, Name = "ali", Email = "ali2@gmail.com", Address = "Samawah", DOB = new DateTime(2003, 8, 18) }
         });
+
+        builder.HasOne(n => n.Department)
+            .WithMany(n => n.Students)
+            .HasForeignKey(n => n.DepartmentId)
+            .HasConstraintName("FK_Students_Department");
     }
 }
