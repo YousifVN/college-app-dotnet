@@ -31,6 +31,8 @@ public class AutoMapperConfig : Profile
         CreateMap<StudentDTO, Student>().ReverseMap()
             .ForMember(n => n.Address, opt => opt.
                 MapFrom(n => string.IsNullOrEmpty(n.Address) ? "No address found" : n.Address));
-
+        
+        
+        CreateMap<RoleDTO, Role>().ReverseMap();
     }
 }
