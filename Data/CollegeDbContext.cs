@@ -13,6 +13,8 @@ public class CollegeDbContext : DbContext
     public DbSet<Student> Students { get; set; }
     
     public DbSet<Department> Departments { get; set; }
+    
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +25,6 @@ public class CollegeDbContext : DbContext
         modelBuilder.ApplyConfiguration(new DepartmentConfig());
         
         // table 3....
+        modelBuilder.ApplyConfiguration(new UserConfig());
     }
 }
