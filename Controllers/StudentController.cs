@@ -2,6 +2,7 @@ using AutoMapper;
 using CollegeApp.Data;
 using CollegeApp.Data.Repository;
 using CollegeApp.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace CollegeApp.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "SuperAdmin, Admin")]
 public class StudentController : ControllerBase
 {
     private readonly ILogger<StudentController> _logger;
@@ -24,7 +26,7 @@ public class StudentController : ControllerBase
     }
 
     [HttpGet("All")]
-    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status200OK), ProducesResponseType(StatusCodes.Status401Unauthorized), ProducesResponseType(StatusCodes.Status403Forbidden), ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<StudentDTO>>> GetAllAsync()
     {
         _logger.LogInformation("GetStudents method started");
