@@ -18,6 +18,7 @@ public class UserConfig : IEntityTypeConfiguration<User>
         builder.Property(n => n.UserType).IsRequired();
         builder.Property(n => n.IsActive).IsRequired();
         builder.Property(n => n.IsDeleted).IsRequired();
-        builder.Property(n => n.CreationTime).IsRequired();
+        builder.Property(n => n.CreationDate).IsRequired();
+        builder.Property(n => n.ModificationDate).IsRequired();
     }
 }

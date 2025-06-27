@@ -16,5 +16,7 @@ public class User
     
     public bool IsDeleted { get; set; }
 
-    public DateTime CreationTime { get; set; }
+    public DateTime CreationDate { get; set; }
+    
+    public DateTime ModificationDate { get; set; }
 }
