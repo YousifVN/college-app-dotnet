@@ -10,7 +10,7 @@ public class User
 
     public string PasswordSalt { get; set; }
 
-    public int UserType { get; set; }
+    public int UserTypeId { get; set; }
 
     public bool IsActive { get; set; }
     
@@ -21,4 +21,6 @@ public class User
     public DateTime ModificationDate { get; set; }
     
     public virtual ICollection<UserRoleMapping> UserRolesMappings { get; set; }
+    
+    public virtual UserType UserType { get; set; }
 }

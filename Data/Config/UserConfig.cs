@@ -15,9 +15,14 @@ public class UserConfig : IEntityTypeConfiguration<User>
         builder.Property(n => n.Username).IsRequired();
         builder.Property(n => n.Password).IsRequired();
         builder.Property(n => n.PasswordSalt).IsRequired();
-        builder.Property(n => n.UserType).IsRequired();
+        builder.Property(n => n.UserTypeId).IsRequired();
         builder.Property(n => n.IsActive).IsRequired();
         builder.Property(n => n.IsDeleted).IsRequired();
         builder.Property(n => n.CreationDate).IsRequired();
+        
+        builder.HasOne(n => n.UserType)
+            .WithMany(n => n.Users)
+            .HasForeignKey(n => n.UserTypeId)
+            .HasConstraintName("FK_Users_UserTypes");
     }
 }
