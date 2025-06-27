@@ -15,6 +15,8 @@ public class CollegeDbContext : DbContext
     public DbSet<Department> Departments { get; set; }
     
     public DbSet<User> Users { get; set; }
+    
+    public DbSet<Role> Roles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,5 +28,7 @@ public class CollegeDbContext : DbContext
         
         // table 3....
         modelBuilder.ApplyConfiguration(new UserConfig());
+        
+        modelBuilder.ApplyConfiguration(new RoleConfig());
     }
 }
