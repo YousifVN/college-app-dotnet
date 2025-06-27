@@ -15,4 +15,6 @@ public class Role
     public DateTime CreationDate { get; set; }
     
     public DateTime ModificationDate { get; set; }
+    
+    public virtual ICollection<RolePrivilege> RolePrivileges { get; set; }
 }

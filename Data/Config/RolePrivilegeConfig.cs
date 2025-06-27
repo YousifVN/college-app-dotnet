@@ -17,5 +17,10 @@ public class RolePrivilegeConfig : IEntityTypeConfiguration<RolePrivilege>
         builder.Property(n => n.IsActive).IsRequired();
         builder.Property(n => n.IsDeleted).IsRequired();
         builder.Property(n => n.CreationDate).IsRequired();
+        
+        builder.HasOne(n => n.Role)
+            .WithMany(n => n.RolePrivileges)
+            .HasForeignKey(n => n.RoleId)
+            .HasConstraintName("FK_RolePrivileges_Roles");
     }
 } 
