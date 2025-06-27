@@ -17,6 +17,8 @@ public class CollegeDbContext : DbContext
     public DbSet<User> Users { get; set; }
     
     public DbSet<Role> Roles { get; set; }
+    
+    public DbSet<RolePrivilege> RolePrivileges { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,5 +32,7 @@ public class CollegeDbContext : DbContext
         modelBuilder.ApplyConfiguration(new UserConfig());
         
         modelBuilder.ApplyConfiguration(new RoleConfig());
+        
+        modelBuilder.ApplyConfiguration(new RolePrivilegeConfig());
     }
 }
